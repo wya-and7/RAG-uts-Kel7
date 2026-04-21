@@ -16,8 +16,6 @@ Jalankan CLI dengan: python src/query.py
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import sys
-sys.stdout.reconfigure(encoding='utf-8')
 
 load_dotenv()
 
@@ -30,11 +28,7 @@ EMBEDDING_MODEL = os.getenv(
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
 
-# Model LLM lokal (Ollama) — default: llama3
-OLLAMA_MODEL  = os.getenv("OLLAMA_MODEL", "llama3")
-# OLLAMA_URL    = os.getenv("OLLAMA_URL", "http://localhost:11434")
-
-# (Opsional) Groq API sebagai fallback
+# Groq API
 GROQ_API_KEY  = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL    = os.getenv("LLM_MODEL_NAME", "llama-3.1-8b-instant")
 
@@ -138,44 +132,6 @@ JAWABAN:"""
     return prompt
 
 
-# =============================================================
-# LANGKAH 4 — OPSI LLM
-# =============================================================
-
-def get_answer_ollama(prompt: str) -> str:
-    """
-    LLM LOKAL via Ollama (100% offline, gratis).
-
-    Cara setup:
-      1. Install Ollama: https://ollama.com/download
-      2. Pull model  : ollama pull llama3
-      3. Jalankan    : ollama serve  (biasanya auto-start)
-    """
-    import requests
-
-    try:
-        response = requests.post(
-            f"{OLLAMA_URL}/api/generate",
-            json={
-                "model"  : OLLAMA_MODEL,
-                "prompt" : prompt,
-                "stream" : False,
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": 1024,
-                }
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        return response.json()["response"]
-    except requests.exceptions.ConnectionError:
-        raise ConnectionError(
-            f"Ollama tidak berjalan di {OLLAMA_URL}.\n"
-            "Pastikan Ollama sudah diinstall dan jalankan: ollama serve"
-        )
-
-
 def get_answer_groq(prompt: str) -> str:
     """
     LLM via Groq API (gratis tier, butuh internet + API key).
@@ -196,15 +152,6 @@ def get_answer_groq(prompt: str) -> str:
     return response.choices[0].message.content
 
 
-# def get_answer_gemini(prompt: str) -> str:
-#     """LLM via Google Gemini API (gratis tier)."""
-#     import google.generativeai as genai
-#     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-#     model = genai.GenerativeModel("gemini-1.5-flash")
-#     response = model.generate_content(prompt)
-#     return response.text
-
-
 # =============================================================
 # FUNGSI UTAMA: answer_question
 # =============================================================
@@ -212,10 +159,7 @@ def get_answer_groq(prompt: str) -> str:
 def answer_question(question: str, vectorstore=None) -> dict:
     """
     Fungsi utama: menerima pertanyaan, mengembalikan jawaban + konteks.
-
-    Urutan LLM yang dicoba:
-      1. Ollama (lokal, offline) — default
-      2. Groq (fallback jika GROQ_API_KEY tersedia)
+    Murni menggunakan Groq.
 
     Returns:
         dict dengan keys: question, answer, contexts, prompt, llm_used
@@ -235,30 +179,14 @@ def answer_question(question: str, vectorstore=None) -> dict:
     # ── Build prompt ──
     prompt = build_prompt(question, contexts)
 
-    # ── Generate answer (coba Ollama dulu, fallback ke Groq) ──
-    llm_used = ""
-    answer   = ""
-
-    print(f"🤖 Mengirim ke LLM lokal (Ollama/{OLLAMA_MODEL})...")
+    # ── Generate answer (menggunakan Groq) ──
+    print(f"🤖 Mengirim ke LLM Groq ({GROQ_MODEL})...")
     try:
-        answer   = get_answer_ollama(prompt)
-        llm_used = f"Ollama ({OLLAMA_MODEL})"
-    except Exception as ollama_err:
-        print(f"   ⚠️  Ollama gagal: {ollama_err}")
-        if GROQ_API_KEY:
-            print(f"   🔄 Fallback ke Groq ({GROQ_MODEL})...")
-            try:
-                answer   = get_answer_groq(prompt)
-                llm_used = f"Groq ({GROQ_MODEL})"
-            except Exception as groq_err:
-                answer   = f"Semua LLM gagal.\nOllama: {ollama_err}\nGroq: {groq_err}"
-                llm_used = "none"
-        else:
-            answer   = (
-                f"LLM gagal: {ollama_err}\n"
-                "Atur GROQ_API_KEY di .env untuk fallback ke Groq."
-            )
-            llm_used = "none"
+        answer   = get_answer_groq(prompt)
+        llm_used = f"Groq ({GROQ_MODEL})"
+    except Exception as e:
+        answer   = f"Groq gagal: {e}\nPastikan GROQ_API_KEY sudah diatur di .env."
+        llm_used = "none"
 
     return {
         "question" : question,
@@ -274,7 +202,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  🤖  RAG System — UTS Data Engineering")
     print(f"  📦  Embedding : {EMBEDDING_MODEL.split('/')[-1]}")
-    print(f"  🧠  LLM       : Ollama/{OLLAMA_MODEL} (lokal)")
+    print(f"  🧠  LLM       : Groq/{GROQ_MODEL}")
     print("  Ketik 'keluar' untuk mengakhiri")
     print("=" * 60)
 

@@ -18,6 +18,9 @@ import streamlit as st
 from dotenv import load_dotenv
 import requests
 from streamlit_lottie import st_lottie
+import json
+import uuid
+from datetime import datetime
 
 load_dotenv()
 
@@ -40,9 +43,8 @@ st.markdown("""
     }
     
     /* 1. HIDE DEFAULT STREAMLIT ELEMENTS (BREAKING THE TEMPLATE) */
-    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* header visibility restored to support native menu/options */
     
     /* Remove default layout paddings */
     .block-container {
@@ -53,31 +55,6 @@ st.markdown("""
         max-width: 1200px;
     }
 
-    /* 2. LIVING GRADIENT BACKGROUND */
-    .stApp {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    }
-
-    /* 3. FLOATING SIDEBAR EXPERIMENT */
-    [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.45) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        margin-top: 2rem !important;
-        margin-bottom: 2rem !important;
-        margin-left: 1rem !important;
-        height: calc(100vh - 4rem) !important;
-        border-radius: 25px;
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 15px 35px rgba(22, 160, 133, 0.1);
-        overflow: hidden;
-    }
-
-    /* Sidebar Resizer line */
-    [data-testid="stSidebarResizer"] {
-        display: none !important;
-    }
-    
     /* 4. PREMIUM HERO BANNER HTML CUSTOM */
     .hero-banner {
         background: linear-gradient(120deg, #10b981 0%, #059669 100%);
@@ -120,31 +97,29 @@ st.markdown("""
 
     /* 5. MODERN CHAT BUBBLES WITH SHADOWS */
     [data-testid="stChatMessage"] {
-        background-color: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(10px);
+        background-color: var(--secondary-background-color);
         border-radius: 20px;
         padding: 25px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
         margin-bottom: 20px;
         border: 1px solid rgba(16, 185, 129, 0.15);
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     [data-testid="stChatMessage"]:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 32px rgba(16, 185, 129, 0.08);
-        background-color: rgba(255, 255, 255, 1);
+        box-shadow: 0 12px 32px rgba(16, 185, 129, 0.1);
     }
     
     /* Text in chat */
     div[data-testid="stChatMessageContent"] {
-        color: #1f2937;
+        color: var(--text-color);
         font-size: 1.05rem;
     }
 
     /* 6. FLOATING NEON CHAT INPUT */
     [data-testid="stChatInput"] {
-        background: white !important;
-        border: 2px solid rgba(16, 185, 129, 0.1) !important;
+        background: var(--background-color) !important;
+        border: 2px solid rgba(16, 185, 129, 0.3) !important;
         border-radius: 30px !important;
         box-shadow: 0 10px 40px rgba(5, 150, 105, 0.08) !important;
         transition: all 0.3s ease;
@@ -173,17 +148,17 @@ st.markdown("""
     /* General transparent/quick action buttons */
     div.stButton > button {
         border-radius: 18px;
-        background: white;
+        background: var(--background-color);
         border: 2px solid transparent;
-        color: #059669;
+        color: #10b981;
         font-weight: 500;
         transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
         height: auto;
         padding: 18px 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
     div.stButton > button:hover {
-        background: #f0fdf4;
+        background: var(--secondary-background-color);
         border: 2px solid #10b981;
         transform: translateY(-3px);
         box-shadow: 0 8px 15px rgba(16, 185, 129, 0.15);
@@ -191,14 +166,15 @@ st.markdown("""
     
     /* 8. CONTEXT CARD (EXPANDER UPGRADE) */
     .context-card {
-        background-color: white;
+        background-color: var(--background-color);
         border-left: 5px solid #10b981;
         padding: 1.5rem;
         border-radius: 8px 12px 12px 8px;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        color: var(--text-color);
     }
-    .context-card b { color: #059669; font-size: 1.1rem; }
+    .context-card b { color: #10b981; font-size: 1.1rem; }
     
     hr {
         border-color: rgba(16, 185, 129, 0.2);
@@ -245,9 +221,85 @@ if "app_loaded" not in st.session_state:
     st.toast("AgriBot siap membantu! 🌱", icon="✨")
     st.session_state.app_loaded = True
 
+# ─── KONTROL STATE CHAT & RIWAYAT ─────────────────────────────────────────────
+history_file = Path(__file__).parent / "chat_history.json"
+
+if "chat_history" not in st.session_state:
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                st.session_state.chat_history = json.load(f)
+        except Exception:
+            st.session_state.chat_history = {}
+    else:
+        st.session_state.chat_history = {}
+
+def save_chat_history():
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.chat_history, f, ensure_ascii=False, indent=2)
+
+def create_new_session():
+    new_id = str(uuid.uuid4())
+    st.session_state.current_session_id = new_id
+    st.session_state.chat_history[new_id] = {
+        "title": "Percakapan Baru",
+        "messages": [],
+        "timestamp": datetime.now().isoformat()
+    }
+    save_chat_history()
+
+if "current_session_id" not in st.session_state:
+    create_new_session()
+
+curr_id = st.session_state.current_session_id
+if curr_id not in st.session_state.chat_history:
+    create_new_session()
+    curr_id = st.session_state.current_session_id
+
+# ─── AUTO-PRUNE EMPTY SESSIONS ───
+# Hapus semua sesi yang kosong (belum ada pesan) dan bukan sesi yang sedang aktif
+keys_to_delete = [sid for sid, chat_data in st.session_state.chat_history.items() 
+                  if not chat_data.get("messages") and sid != curr_id]
+
+if keys_to_delete:
+    for sid in keys_to_delete:
+        del st.session_state.chat_history[sid]
+    save_chat_history()
+
+current_chat = st.session_state.chat_history[curr_id]
+messages_list = current_chat["messages"]
+
 # ─── SIDEBAR FLOATING KUSTOM ──────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    if st.button("➕ Percakapan Baru", use_container_width=True, type="primary"):
+        # Jangan buat baru terus-menerus jika chat saat ini masih kosong
+        if current_chat.get("messages"):
+            create_new_session()
+            st.rerun()
+        else:
+            st.toast("Anda sudah berada di percakapan baru yang belum terisi!", icon="ℹ️")
+
+    st.markdown("### 💬 Riwayat Percakapan")
+    
+    # Sort history by descending timestamp
+    history_items = list(st.session_state.chat_history.items())
+    history_items.sort(key=lambda x: x[1].get('timestamp', ''), reverse=True)
+    
+    for sid, chat_data in history_items:
+        title = chat_data.get("title", "Percakapan")
+        if sid == curr_id:
+            btn_label = f"📍 {title} (Aktif)"
+        else:
+            btn_label = f"💬 {title}"
+            
+        if st.button(btn_label, key=f"hist_{sid}", use_container_width=True):
+            st.session_state.current_session_id = sid
+            st.rerun()
+
+    st.divider()
+
     st.markdown("### ⚙️ Engine RAG")
     
     top_k = st.slider(
@@ -280,12 +332,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ─── KONTROL STATE CHAT ───────────────────────────────────────────────────────
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 # Tampilkan riwayat chat dengan custom styling & avatars
-for msg in st.session_state.messages:
+for msg in messages_list:
     avatar = "🧑‍🌾" if msg["role"] == "user" else "🤖"
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
@@ -297,14 +345,14 @@ for msg in st.session_state.messages:
                     st.markdown(f"""
                     <div class="context-card">
                         <b>[{i}] Skor Presisi: {ctx['score']:.4f}</b><br/>
-                        <small style="color: #6b7280; font-family: monospace;">{ctx['source']}</small><br/><br/>
-                        <span style="color: #4b5563; font-size: 0.95rem;">{ctx['content'][:300]}...</span>
+                        <small style="color: var(--text-color); opacity: 0.7; font-family: monospace;">{ctx['source']}</small><br/><br/>
+                        <span style="font-size: 0.95rem;">{ctx['content'][:300]}...</span>
                     </div>
                     """, unsafe_allow_html=True)
 
 # ─── EMPTY STATE & QUICK ACTIONS ──────────────────────────────────────────────
 quick_action_clicked = None
-if len(st.session_state.messages) == 0:
+if len(messages_list) == 0:
     st.markdown("<h3 style='text-align: center; color: #059669; font-weight: 700; margin-bottom: 2rem;'>Coba tanyakan sesuatu:</h3>", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns(3)
@@ -322,8 +370,14 @@ user_input = st.chat_input("Ketik pertanyaan seputar botani, tanaman basah, hidr
 question = quick_action_clicked or user_input
 
 if question:
+    # Set chat title first if it's new
+    if len(messages_list) == 0:
+        current_chat["title"] = question[:25] + ("..." if len(question) > 25 else "")
+        current_chat["timestamp"] = datetime.now().isoformat()
+        
     # 1. Catat input user dan render
-    st.session_state.messages.append({"role": "user", "content": question})
+    messages_list.append({"role": "user", "content": question})
+    save_chat_history()
     with st.chat_message("user", avatar="🧑‍🌾"):
         st.write(question)
     
@@ -345,8 +399,8 @@ if question:
                             st.markdown(f"""
                             <div class="context-card">
                                 <b>[{i}] Skor Presisi: {ctx['score']:.4f}</b><br/>
-                                <small style="color: #6b7280; font-family: monospace;">{ctx['source']}</small><br/><br/>
-                                <span style="color: #4b5563; font-size: 0.95rem;">{ctx['content'][:300]}...</span>
+                                <small style="color: var(--text-color); opacity: 0.7; font-family: monospace;">{ctx['source']}</small><br/><br/>
+                                <span style="font-size: 0.95rem;">{ctx['content'][:300]}...</span>
                             </div>
                             """, unsafe_allow_html=True)
                 
@@ -356,22 +410,27 @@ if question:
                         st.code(result["prompt"], language="text")
                 
                 # Simpan metadata ke log percakapan
-                st.session_state.messages.append({
+                messages_list.append({
                     "role": "assistant",
                     "content": result["answer"],
                     "contexts": result["contexts"]
                 })
+                save_chat_history()
                 
             except Exception as e:
                 error_msg = f"Gangguan Sistem: {e}\n\nPastikan API Key LLM yang digunakan sudah tervalidasi."
                 st.error(error_msg)
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                messages_list.append({"role": "assistant", "content": error_msg})
+                save_chat_history()
 
 # ─── TOMBOL RESET CHAT ────────────────────────────────────────────────────────
-if st.session_state.messages:
+if messages_list:
     st.markdown("<hr style='margin-top: 40px;'>", unsafe_allow_html=True)
     colA, colB, colC = st.columns([1,2,1])
     with colB:
-        if st.button("🧹 Hapus Sesi Percakapan", type="primary", use_container_width=True):
-            st.session_state.messages = []
+        if st.button("🗑️ Hapus Percakapan", type="primary", use_container_width=True):
+            if curr_id in st.session_state.chat_history:
+                del st.session_state.chat_history[curr_id]
+                save_chat_history()
+            create_new_session()
             st.rerun()

@@ -16,6 +16,8 @@ Jalankan CLI dengan: python src/query.py
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 load_dotenv()
 

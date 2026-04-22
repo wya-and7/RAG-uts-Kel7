@@ -344,7 +344,7 @@ for msg in messages_list:
                 for i, ctx in enumerate(msg["contexts"], 1):
                     st.markdown(f"""
                     <div class="context-card">
-                        <b>[{i}] Skor Presisi: {ctx['score']:.4f}</b><br/>
+                        <b>[{i}] Skor Relevansi: {ctx['score']}/5</b><br/>
                         <small style="color: var(--text-color); opacity: 0.7; font-family: monospace;">{ctx['source']}</small><br/><br/>
                         <span style="font-size: 0.95rem;">{ctx['content'][:300]}...</span>
                     </div>
@@ -387,7 +387,7 @@ if question:
             try:
                 from query import answer_question
                 # Pastikan backend tetap berkerja persis seperti versi awal
-                result = answer_question(question, vectorstore)
+                result = answer_question(question, vectorstore, top_k=top_k)
                 
                 # Tampilkan hasil
                 st.write(result["answer"])
@@ -398,7 +398,7 @@ if question:
                         for i, ctx in enumerate(result["contexts"], 1):
                             st.markdown(f"""
                             <div class="context-card">
-                                <b>[{i}] Skor Presisi: {ctx['score']:.4f}</b><br/>
+                                <b>[{i}] Skor Relevansi: {ctx['score']}/5</b><br/>
                                 <small style="color: var(--text-color); opacity: 0.7; font-family: monospace;">{ctx['source']}</small><br/><br/>
                                 <span style="font-size: 0.95rem;">{ctx['content'][:300]}...</span>
                             </div>

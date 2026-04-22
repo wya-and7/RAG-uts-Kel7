@@ -78,12 +78,16 @@ def retrieve_context(vectorstore, question: str, top_k: int = TOP_K) -> list:
 
     contexts = []
     for doc, score in results:
+        # Chroma mengembalikan distance (semakin kecil semakin relevan).
+        # Ubah ke skor relevansi 1-5 agar lebih mudah dibaca pengguna.
+        similarity = max(0.0, min(1.0, 1 - (float(score) / 2)))
+        relevance_score = max(1, min(5, round(similarity * 4 + 1)))
         contexts.append({
             "content"     : doc.page_content,
             "source"      : doc.metadata.get("source", "unknown"),
             "file_name"   : doc.metadata.get("file_name", ""),
             "source_type" : doc.metadata.get("source_type", "unknown"),
-            "score"       : round(float(score), 4)
+            "score"       : relevance_score
         })
 
     return contexts
@@ -156,7 +160,7 @@ def get_answer_groq(prompt: str) -> str:
 # FUNGSI UTAMA: answer_question
 # =============================================================
 
-def answer_question(question: str, vectorstore=None) -> dict:
+def answer_question(question: str, vectorstore=None, top_k: int = TOP_K) -> dict:
     """
     Fungsi utama: menerima pertanyaan, mengembalikan jawaban + konteks.
     Murni menggunakan Groq.
@@ -169,12 +173,12 @@ def answer_question(question: str, vectorstore=None) -> dict:
 
     # ── Retrieval ──
     print(f"🔍 Mencari konteks relevan untuk: '{question}'")
-    contexts = retrieve_context(vectorstore, question)
+    contexts = retrieve_context(vectorstore, question, top_k=top_k)
     print(f"   ✅ {len(contexts)} chunk relevan ditemukan:")
     for i, ctx in enumerate(contexts, 1):
         tipe = ctx["source_type"].upper()
         nama = ctx["file_name"] or ctx["source"]
-        print(f"      [{i}] ({tipe}) {nama} | skor: {ctx['score']:.4f}")
+        print(f"      [{i}] ({tipe}) {nama} | skor relevansi: {ctx['score']}/5")
 
     # ── Build prompt ──
     prompt = build_prompt(question, contexts)
@@ -237,7 +241,7 @@ if __name__ == "__main__":
             for i, ctx in enumerate(result["contexts"], 1):
                 tipe = ctx["source_type"].upper()
                 nama = ctx["file_name"] or ctx["source"]
-                print(f"  [{i}] Skor: {ctx['score']:.4f} | ({tipe}) {nama}")
+                print(f"  [{i}] Skor Relevansi: {ctx['score']}/5 | ({tipe}) {nama}")
                 print(f"      {ctx['content'][:120]}...")
             print("─" * 60)
 

@@ -1,46 +1,40 @@
-# 🤖 RAG Starter Pack — UTS Data Engineering
+# 🤖 RAG — UTS Data Engineering
 
 > **Retrieval-Augmented Generation** — Sistem Tanya-Jawab Cerdas Berbasis Dokumen
-
-Starter pack ini adalah **kerangka awal** proyek RAG untuk UTS Data Engineering D3/D4.
-Mahasiswa mengisi, memodifikasi, dan mengembangkan kode ini sesuai topik kelompok masing-masing.
 
 ---
 
 ## 👥 Identitas Kelompok
 
-| Nama | NIM | Tugas Utama |
-|------|-----|-------------|
-| ...  | ... | ...         |
-| ...  | ... | ...         |
-| ...  | ... | ...         |
+|           Nama            |    NIM    | Tugas Utama     |
+|---------------------------|-----------|-----------------|
+| Achmad Wildan Miftakhudin | 244311032 | Project Manager |
+| Kunni Sofa Rahmayani      | 244311046 | Data Engineer   |
+| Rindy Cantika Agustina P  | 244311057 | Data Analyst    |
+| Riyan Zakaria Zulkarnain  | 244311058 | Project Manager |
 
-**Topik Domain:** *(isi: Akademik / Kesehatan / Hukum / Bisnis / Pertanian / Teknologi)*  
-**Stack yang Dipilih:** *(isi: LangChain / LlamaIndex / From Scratch)*  
-**LLM yang Digunakan:** *(isi: Groq / Gemini / Ollama / lainnya)*  
-**Vector DB yang Digunakan:** *(isi: ChromaDB / FAISS / lainnya)*
+**Topik Domain:** *Pertanian*  
+**Stack yang Dipilih:** *LangChain*  
+**LLM yang Digunakan:** *Groq*  
+**Vector DB yang Digunakan:** *ChromaDB*
 
 ---
 
 ## 🗂️ Struktur Proyek
 
 ```
-rag-uts-[nama-kelompok]/
+RAG-uts-Kel7/
 ├── data/                    # Dokumen sumber Anda (PDF, TXT, dll.)
-│   └── sample.txt           # Contoh dokumen (ganti dengan dokumen Anda)
+│   └── Crop_recomendationV2 # Contoh dokumen (ganti dengan dokumen Anda)
 ├── src/
 │   ├── indexing.py          # 🔧 WAJIB DIISI: Pipeline indexing
-│   ├── query.py             # 🔧 WAJIB DIISI: Pipeline query & retrieval
-│   ├── embeddings.py        # 🔧 WAJIB DIISI: Konfigurasi embedding
-│   └── utils.py             # Helper functions
+│   ├── query.py             # 🔧 WAJIB DIISI: Pipeline query & retrieval      
 ├── ui/
 │   └── app.py               # 🔧 WAJIB DIISI: Antarmuka Streamlit
 ├── docs/
-│   └── arsitektur.png       # 📌 Diagram arsitektur (buat sendiri)
+│   └── Arsitektur.png       # 📌 Diagram arsitektur (buat sendiri)
 ├── evaluation/
-│   └── hasil_evaluasi.xlsx  # 📌 Tabel evaluasi 10 pertanyaan
-├── notebooks/
-│   └── 01_demo_rag.ipynb    # Notebook demo dari hands-on session
+│   └── hasil evaluasi.xlsx  # 📌 Tabel evaluasi 10 pertanyaan
 ├── .env.example             # Template environment variables
 ├── .gitignore
 ├── requirements.txt
@@ -55,8 +49,8 @@ rag-uts-[nama-kelompok]/
 
 ```bash
 # Clone repository ini
-git clone https://github.com/[username]/rag-uts-[kelompok].git
-cd rag-uts-[kelompok]
+git clone https://github.com/wya-and7/RAG-uts-Kel7.git
+cd RAG-uts-Kel7
 
 # Buat virtual environment
 python -m venv venv
@@ -112,32 +106,27 @@ Semua konfigurasi utama ada di `src/config.py` (atau langsung di setiap file):
 | `CHUNK_SIZE` | 500 | Ukuran setiap chunk teks (karakter) |
 | `CHUNK_OVERLAP` | 50 | Overlap antar chunk |
 | `TOP_K` | 3 | Jumlah dokumen relevan yang diambil |
-| `MODEL_NAME` | *(isi)* | Nama model LLM yang digunakan |
+| `MODEL_NAME` | *llama-3.1-8b-instant* | Nama model LLM yang digunakan |
 
 ---
 
 ## 📊 Hasil Evaluasi
 
-*(Isi setelah pengujian selesai)*
+*Evaluasi Pertanyaan ada di evaluation/Hasil Evaluasi.csv*
 
-| # | Pertanyaan | Jawaban Sistem | Jawaban Ideal | Skor (1-5) |
-|---|-----------|----------------|---------------|-----------|
-| 1 | ... | ... | ... | ... |
-| 2 | ... | ... | ... | ... |
-
-**Rata-rata Skor:** ...  
-**Analisis:** ...
+**Rata-rata Skor:** 3.9  
+**Analisis:** sistem sudah stabil untuk pertanyaan konseptual, tetapi perlu peningkatan pada presisi data kuantitatif dan strategi fallback ketika dokumen tidak memuat jawaban eksplisit.
 
 ---
 
 ## 🏗️ Arsitektur Sistem
 
-*(Masukkan gambar diagram arsitektur di sini)*
+![Diagram Arsitektur RAG](docs/Diagram.png)
 
 ```
 [Dokumen] → [Loader] → [Splitter] → [Embedding] → [Vector DB]
-                                                         ↕
-[User Query] → [Query Embed] → [Retriever] → [Prompt] → [LLM] → [Jawaban]
+                                                    ↕
+[User Query] → [Query Embed] → [Retriever] ---→ [Prompt] → [LLM] → [Jawaban]
 ```
 
 ---
@@ -145,9 +134,8 @@ Semua konfigurasi utama ada di `src/config.py` (atau langsung di setiap file):
 ## 📚 Referensi & Sumber
 
 - Framework: *(LangChain docs / LlamaIndex docs)*
-- LLM: *(Groq / Gemini / Ollama)*
-- Vector DB: *(ChromaDB / FAISS docs)*
-- Tutorial yang digunakan: *(cantumkan URL)*
+- LLM: *Groq*
+- Vector DB: *ChromaDB*
 
 ---
 

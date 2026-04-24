@@ -8,6 +8,9 @@ venv/
 env/
 .venv/
 
+# Chat history
+chat_history.json
+
 # Vector store (bisa diregenerasi)
 vectorstore/
 chroma_db/
